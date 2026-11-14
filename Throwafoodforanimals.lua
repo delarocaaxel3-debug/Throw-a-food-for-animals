@@ -329,9 +329,9 @@ function LoadHub()
                         other.TextColor3 = (other == tb) and Theme.Accent or Theme.Muted
                     end
                 end
-                pFarm.Visible = (tb.Text:find("Farming"))
-                pEvent.Visible = (tb.Text:find("Event"))
-                pSettings.Visible = (tb.Text:find("Setting"))
+                pFarm.Visible = (tb.Text:find("Farming") ~= nil)
+                pEvent.Visible = (tb.Text:find("Event") ~= nil)
+                pSettings.Visible = (tb.Text:find("Setting") ~= nil)
             end)
         end
     end
@@ -347,7 +347,7 @@ function LoadHub()
         local method = getnamecallmethod()
         local args = {...}
         
-        if method == "FireServer" then
+        if method == "FireServer" or method == "InvokeServer" then
             local name = self.Name:lower()
             
             -- Automatically learn remote names based on keywords
@@ -390,83 +390,77 @@ function LoadHub()
     --==================================================
     -- AUTO FARM LOOPS
     --==================================================
-    
     -- 1. Auto Train & Upgrade
-    task.spawn(function()
-        while task.wait(0.5) do
-            if State.AutoTrain and Learned.Train then
-                pcall(function() Learned.Train:FireServer() end)
-            end
-            if State.AutoUpgrade and Learned.Upgrade then
-                pcall(function() Learned.Upgrade:FireServer() end)
-            end
+task.spawn(function()
+    while task.wait(0.5) do
+        if State.AutoTrain and Learned.Train then
+            pcall(function() 
+                if Learned.Train:IsA("RemoteEvent") then Learned.Train:FireServer() 
+                else Learned.Train:InvokeServer() end 
+            end)
         end
-    end)
-
-    -- 2. Auto Throw (Equip -> Activate -> Unequip)
-    task.spawn(function()
-        while task.wait(0.2) do
-            if State.AutoThrow then
-                local char = LP.Character
-                local backpack = LP:FindFirstChild("Backpack")
-                local hum = char and char:FindFirstChildOfClass("Humanoid")
-                
-                if hum and backpack then
-                    for _, item in ipairs(backpack:GetChildren()) do
-                        if item:IsA("Tool") and (item.Name:lower():find("food") or item.Name:lower():find("meat")) then
-                            hum:EquipTool(item)
-                            task.wait(0.1)
-                            item:Activate()
-                            task.wait(0.1)
-                            hum:UnequipTools()
-                            break
-                        end
-                    end
-                end
-            end
+        if State.AutoUpgrade and Learned.Upgrade then
+            pcall(function() 
+                if Learned.Upgrade:IsA("RemoteEvent") then Learned.Upgrade:FireServer() 
+                else Learned.Upgrade:InvokeServer() end 
+            end)
         end
-    end)
+    end
+end)
 
-    -- 3. Auto Buy Food
-    task.spawn(function()
-        while task.wait(2) do
-            if State.AutoBuyFood and Learned.Buy then
-                pcall(function() Learned.Buy:FireServer("Food") end)
-            end
+-- 3. Auto Buy Food
+task.spawn(function()
+    while task.wait(2) do
+        if State.AutoBuyFood and Learned.Buy then
+            pcall(function() 
+                if Learned.Buy:IsA("RemoteEvent") then Learned.Buy:FireServer("Food") 
+                else Learned.Buy:InvokeServer("Food") end 
+            end)
         end
-    end)
+    end
+end)
 
-    -- 4. Auto Place Pet
-    task.spawn(function()
-        while task.wait(3) do
-            if State.AutoPlacePet and Learned.Pet then
-                pcall(function() Learned.Pet:FireServer() end)
-            end
+-- 4. Auto Place Pet
+task.spawn(function()
+    while task.wait(3) do
+        if State.AutoPlacePet and Learned.Pet then
+            pcall(function() 
+                if Learned.Pet:IsA("RemoteEvent") then Learned.Pet:FireServer() 
+                else Learned.Pet:InvokeServer() end 
+            end)
         end
-    end)
+    end
+end)
 
-    -- 5. Event Logic
-    task.spawn(function()
-        while task.wait(1) do
-            if State.AutoQuest then
-                -- Look for any quest remote
-                for name, r in pairs(Learned) do
-                    if name == "Quest" then pcall(function() r:FireServer() end) end
-                end
-            end
-            if State.AutoBuyEvent then
-                -- Fire the Buy remote with event args
-                if Learned.Buy then
-                    pcall(function() Learned.Buy:FireServer("2xStrength") end)
-                    pcall(function() Learned.Buy:FireServer("2xMoney") end)
-                end
-            end
-            if State.AutoFusePet and Learned.Fuse then
-                pcall(function() Learned.Fuse:FireServer() end)
-            end
+-- 5. Event Logic
+task.spawn(function()
+    while task.wait(1) do
+        if State.AutoQuest and Learned.Quest then
+            pcall(function() 
+                if Learned.Quest:IsA("RemoteEvent") then Learned.Quest:FireServer() 
+                else Learned.Quest:InvokeServer() end 
+            end)
         end
-    end)
-
+        if State.AutoBuyEvent and Learned.Buy then
+            pcall(function() 
+                if Learned.Buy:IsA("RemoteEvent") then 
+                    Learned.Buy:FireServer("2xStrength")
+                    Learned.Buy:FireServer("2xMoney") 
+                else 
+                    Learned.Buy:InvokeServer("2xStrength")
+                    Learned.Buy:InvokeServer("2xMoney")
+                end 
+            end)
+        end
+        if State.AutoFusePet and Learned.Fuse then
+            pcall(function() 
+                if Learned.Fuse:IsA("RemoteEvent") then Learned.Fuse:FireServer() 
+                else Learned.Fuse:InvokeServer() end 
+            end)
+        end
+    end
+end)
+    
     --==================================================
     -- FLOATING TOGGLE
     --==================================================
